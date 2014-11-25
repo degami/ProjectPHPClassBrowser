@@ -80,9 +80,9 @@ function get_php_classes_with_methods($php_code) {
         if(!is_array($current_function_definition)) $current_function_definition = array();
         $current_function_definition += array( 'visibility' => ($tokens[$i][0] == T_PRIVATE) ? 'private' : (($tokens[$i][0] == T_PROTECTED) ? 'protected' : 'public') );
       }
-      if( $tokens[$i][0] == T_STATIC ){
+      if( $tokens[$i][0] == T_STATIC || $tokens[$i][0] == T_ABSTRACT ){
         if(!is_array($current_function_definition)) $current_function_definition = array();
-        $current_function_definition += array( 'context' => 'static' );
+        $current_function_definition += array( 'context' => ($tokens[$i][0] == T_STATIC) ? 'static' : 'abstract' );
       }
 
       if($tokens[$i][0] == T_FUNCTION){
