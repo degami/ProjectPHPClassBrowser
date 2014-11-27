@@ -146,7 +146,7 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
 
             # try to update browser window
             window = sublime.active_window()
-            utils = _projectPHPClassUtils(window.folders()[0])
+            utils = _projectPHPClassUtils(self.rootPath)
             browser_view = utils.find_browser_view()
             if(browser_view != None):
               window.run_command('project_phpclass_close_layout')
