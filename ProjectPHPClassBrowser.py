@@ -143,6 +143,15 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
                             pipe = subprocess.Popen(['php', parser, filepath], stdout=cfp, stderr=cfp)
                             out, err = pipe.communicate()
             cfp.close()
+
+            # try to update browser window
+            window = sublime.active_window()
+            utils = _projectPHPClassUtils(self.rootPath)
+            browser_view = utils.find_browser_view()
+            if(browser_view != None):
+              window.run_command('project_phpclass_close_layout')
+              window.run_command('project_phpclass_open_layout')
+
             return
         except:
             exc = sys.exc_info()[1]
