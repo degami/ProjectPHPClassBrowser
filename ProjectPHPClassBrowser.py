@@ -126,7 +126,7 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
         self.result = None
 
     def get_php_executable(self):
-        settings = sublime.active_window().active_view().settings()
+        settings = sublime.load_settings('ProjectPHPClassBrowser.sublime-settings')
         return settings.get('php_executable') or 'php'
 
     def run(self):
