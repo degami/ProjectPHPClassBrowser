@@ -1,6 +1,6 @@
 Usage instructions:
 
-PHP cli is required, obviously
+PHP cli is required, obviously (php executable must be in your $PATH environment variable)
 
 You must have a Sublime Text project file saved in the root of the project.
 To do this open your Project files (drag and drop the whole directory onto Sublime Text) and then save a new project by using the Project menu item.

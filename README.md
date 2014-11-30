@@ -5,7 +5,11 @@ A Sublime Text 2 plugin which provides project's PHP classes browser.
 Requirements:
 
   * Sublime Text 2
-  * PHP cli, obviously
+  * PHP cli, obviously (php executable must be in your $PATH environment variable)
+
+## Installation instructions:
+
+Install with package manager or clone the repository in your packages folder
 
 ## Usage instructions:
 
