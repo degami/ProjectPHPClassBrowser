@@ -139,7 +139,7 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
                         if f.endswith(p):
                             #parse the file and save class methods
                             filepath = os.path.join(root, f)
-                            parser = sublime.packages_path() + '/ProjectPHPClassBrowser/parse_file.php'
+                            parser = sublime.packages_path() + '/Project PHP ClassBrowser/parse_file.php'
                             pipe = subprocess.Popen(['php', parser, filepath], stdout=cfp, stderr=cfp)
                             out, err = pipe.communicate()
             cfp.close()
