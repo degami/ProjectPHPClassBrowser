@@ -125,6 +125,10 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
         self.timeout = timeout
         self.result = None
 
+    def get_php_executable(self):
+        settings = sublime.active_window().active_view().settings()
+        return settings.get('php_executable') or 'php'
+
     def run(self):
         try:
             compPath = os.path.join( os.path.dirname(self.rootPath), 'phpclass.sublime-classdb' )
@@ -140,7 +144,7 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
                             #parse the file and save class methods
                             filepath = os.path.join(root, f)
                             parser = os.path.join( sublime.packages_path() , 'Project PHP ClassBrowser', 'parse_file.php' )
-                            pipe = subprocess.Popen(['php', parser, filepath], stdout=cfp, stderr=cfp)
+                            pipe = subprocess.Popen([self.get_php_executable(), parser, filepath], stdout=cfp, stderr=cfp)
                             out, err = pipe.communicate()
             cfp.close()
 
@@ -310,8 +314,6 @@ class ProjectPHPClassBrowser(sublime_plugin.EventListener):
 
     def on_post_save(self, view):
         settings = sublime.active_window().active_view().settings()
-        sublime.status_message( str(settings.get('scan_php_classes') ) )
-
         if( settings.get('scan_php_classes') != True ):
           return
 
