@@ -6,7 +6,7 @@ class _projectPHPClassUtils:
         self.dbFilename = 'phpclass.sublime-classdb'
 
     def get_db_classnames(self):
-        compPath = self.rootPath + '/' + self.dbFilename
+        compPath = os.path.join( self.rootPath , self.dbFilename )
         cfp = open(compPath, 'r')
 
         data = []
@@ -25,7 +25,7 @@ class _projectPHPClassUtils:
         return data
 
     def get_db_data(self, classname):
-        compPath = self.rootPath + '/' + self.dbFilename
+        compPath = os.path.join( self.rootPath , self.dbFilename )
         cfp = open(compPath, 'r')
 
         data = {}
@@ -100,7 +100,7 @@ class _projectPHPClassUtils:
         view.set_read_only(True)
 
     def dbPresent(self):
-        compPath = self.rootPath + '/' + self.dbFilename
+        compPath = os.path.join( self.rootPath , self.dbFilename )
         ispresent = os.path.isfile(compPath)
         return ispresent
 
@@ -127,7 +127,7 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
 
     def run(self):
         try:
-            compPath = os.path.dirname(self.rootPath) + '/phpclass.sublime-classdb'
+            compPath = os.path.join( os.path.dirname(self.rootPath), 'phpclass.sublime-classdb' )
             cfp = open(compPath, 'w')
             cfp.close()
             cfp = open(compPath, 'a')
@@ -139,7 +139,7 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
                         if f.endswith(p):
                             #parse the file and save class methods
                             filepath = os.path.join(root, f)
-                            parser = sublime.packages_path() + '/Project PHP ClassBrowser/parse_file.php'
+                            parser = os.path.join( sublime.packages_path() , 'Project PHP ClassBrowser', 'parse_file.php' )
                             pipe = subprocess.Popen(['php', parser, filepath], stdout=cfp, stderr=cfp)
                             out, err = pipe.communicate()
             cfp.close()
