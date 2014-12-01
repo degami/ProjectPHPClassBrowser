@@ -17,7 +17,7 @@ class _projectPHPClassUtils:
             if( data.count(cname) == 0 ):
               data.append(cname)
           except:
-            print "errors with line: %s" % (line,)
+            # print "errors with line: %s" % (line,)
             pass
           line = cfp.readline()
 
@@ -47,57 +47,12 @@ class _projectPHPClassUtils:
                   'line': methodline
               } )
           except:
-            print "errors with line: %s" % (line,)
+            # print "errors with line: %s" % (line,)
             pass
 
           line = cfp.readline()
         cfp.close()
         return data
-
-    def fill_view(self, view):
-        if( self.dbPresent() == False ):
-            return
-
-        window = sublime.active_window()
-        view.set_name('PHP Class Browser')
-        view.set_scratch(True)
-        edit = view.begin_edit()
-
-        # remove view content if present
-        viewcontent = sublime.Region(0,view.size())
-        view.erase(edit,viewcontent)
-
-        regions = []
-        foldregions = []
-        numregions = 0;
-
-        for classname in self.get_db_classnames():
-          data = self.get_db_data(classname)
-
-          # for k, item in data.iteritems():
-          s = data.keys()
-          s.sort()
-          for k in s:
-            item = data[k]
-            if(numregions > 0):
-                view.insert(edit, view.size(),'\n')
-            numregions += 1
-            initregion = view.size()
-            view.insert(edit, view.size(), item.get('name'))
-            initfold = view.size()
-            view.insert(edit, view.size(),'\n\t# '+item.get('filepath'))
-            for method in item.get('methods'):
-                view.insert(edit, view.size(),'\n\t' + method.get('definition'))
-            endregion = view.size()
-            regions.append(sublime.Region(initregion,initfold))
-            foldregions.append(sublime.Region(initfold,endregion))
-
-        view.insert(edit, view.size(),'\n')
-        view.add_regions('classbrowser' , regions, 'classbrowser', 'bookmark',sublime.DRAW_OUTLINED)
-        view.add_regions('classbrowserfoldregions' , foldregions, 'classbrowserfoldregions', 'fold', sublime.HIDDEN)
-        view.fold(foldregions)
-        view.end_edit(edit)
-        view.set_read_only(True)
 
     def dbPresent(self):
         compPath = os.path.join( self.rootPath , self.dbFilename )
@@ -150,11 +105,10 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
 
             # try to update browser window
             window = sublime.active_window()
-            utils = _projectPHPClassUtils(self.rootPath)
+            utils = _projectPHPClassUtils(os.path.dirname(self.rootPath))
             browser_view = utils.find_browser_view()
             if(browser_view != None):
-              window.run_command('project_phpclass_close_layout')
-              window.run_command('project_phpclass_open_layout')
+              browser_view.run_command("fill_browser_view", {"rootPath": os.path.dirname(self.rootPath) } )
 
             return
         except:
@@ -166,7 +120,13 @@ class ProjectPhpclassOpenLayoutCommand(sublime_plugin.WindowCommand):
     def run(self):
         window = sublime.active_window();
         utils = _projectPHPClassUtils(window.folders()[0])
-        if( utils.dbPresent() == False ):
+        if( utils.dbPresent() != True ):
+            sublime.status_message('No DataBase Found!')
+            return
+
+        browser_view = utils.find_browser_view()
+        if( browser_view != None ):
+            browser_view.run_command("fill_browser_view", {"rootPath": window.folders()[0] } )
             return
 
         oldlayout = window.get_layout();
@@ -181,11 +141,7 @@ class ProjectPhpclassOpenLayoutCommand(sublime_plugin.WindowCommand):
         })
         window.focus_group(1)
         view = window.new_file()
-
-        # view.set_read_only(True)
-        # window.set_view_index(view, group, index)
-
-        utils.fill_view(view)
+        view.run_command("fill_browser_view", {"rootPath": window.folders()[0] } )
 
 class ProjectPhpclassCloseLayoutCommand(sublime_plugin.WindowCommand):
     def run(self):
@@ -209,15 +165,66 @@ class ProjectPhpclassCloseLayoutCommand(sublime_plugin.WindowCommand):
             window.run_command('close')
         window.focus_group(0)
 
-class ClickPhpclassBrowser(sublime_plugin.TextCommand):
-    def run(self, edit):
+class FillBrowserViewCommand(sublime_plugin.TextCommand):
+    def run(self, edit, rootPath):
+        window = sublime.active_window()
+
+        if rootPath:
+          utils = _projectPHPClassUtils(rootPath)
+        else:
+          utils = _projectPHPClassUtils(window.folders()[0])
+
+        if( utils.dbPresent() != True ):
+            sublime.status_message('No DataBase Found!')
+            return
 
         view = self.view
+        view.set_scratch(True)
+        view.set_name('PHP Class Browser')
+
+        view.set_read_only(False)
+
+        # remove view content if present
+        viewcontent = sublime.Region(0,view.size())
+        view.erase(edit,viewcontent)
+
+        regions = []
+        foldregions = []
+        numregions = 0;
+
+        for classname in utils.get_db_classnames():
+          data = utils.get_db_data(classname)
+
+          for k in sorted(data.keys()):
+            item = data[k]
+            if(numregions > 0):
+                view.insert(edit, view.size(),'\n')
+            numregions += 1
+            initregion = view.size()
+            view.insert(edit, view.size(), item.get('name'))
+            initfold = view.size()
+            view.insert(edit, view.size(),'\n\t# '+item.get('filepath'))
+            for method in item.get('methods'):
+                view.insert(edit, view.size(),'\n\t' + method.get('definition'))
+            endregion = view.size()
+            regions.append(sublime.Region(initregion,initfold))
+            foldregions.append(sublime.Region(initfold,endregion))
+
+        view.insert(edit, view.size(),'\n')
+        view.add_regions('classbrowser' , regions, 'classbrowser', 'bookmark',sublime.DRAW_OUTLINED)
+        view.add_regions('classbrowserfoldregions' , foldregions, 'classbrowserfoldregions', 'fold', sublime.HIDDEN)
+        view.fold(foldregions)
+        view.end_edit(edit)
+        view.set_read_only(True)
+        return
+
+class ClickPhpclassBrowser(sublime_plugin.TextCommand):
+    def run(self, edit):
+        view = self.view
         window = sublime.active_window()
-        if( view.is_scratch() == False ):
-            return
-        if( view.name() != 'PHP Class Browser' ):
-            return
+        utils = _projectPHPClassUtils(window.folders()[0])
+        if( utils.is_browser_view(view) != True ):
+            return;
 
         window.focus_view(view)
 
@@ -241,21 +248,26 @@ class ClickPhpclassBrowser(sublime_plugin.TextCommand):
         else:
             classname = word
 
-        data = _projectPHPClassUtils(window.folders()[0]).get_db_data(classname)
-        window.focus_group(0)
-        window.open_file(data.get(classname)['filepath'])
-        new_view = window.active_view()
+        classname = classname.split('\n')[0].strip()
+        if(len(classname)>0):
+            try:
+                data = utils.get_db_data(classname)
+                window.focus_group(0)
+                window.open_file(data.get(classname)['filepath'])
+                new_view = window.active_view()
 
-        if( methodname != None ):
-            for methoddefinition in data.get(classname)['methods']:
-                if( methoddefinition['name'] == methodname ):
-                    new_view.run_command("goto_line", {"line": methoddefinition['line'] } )
-                    return
+                if( methodname != None ):
+                    for methoddefinition in data.get(classname)['methods']:
+                        if( methoddefinition['name'] == methodname ):
+                            new_view.run_command("goto_line", {"line": methoddefinition['line'] } )
+                            return
 
-            #if not found
-            new_view.run_command("goto_line", {"line": data.get(classname)['line'] } )
-        else:
-            new_view.run_command("goto_line", {"line": data.get(classname)['line'] } )
+                    #if not found
+                    new_view.run_command("goto_line", {"line": data.get(classname)['line'] } )
+                else:
+                    new_view.run_command("goto_line", {"line": data.get(classname)['line'] } )
+            except:
+                sublime.status_message('Unknown Class Name: '+str(classname))
 
 class GotoLineCommand(sublime_plugin.TextCommand):
 
@@ -282,19 +294,7 @@ class ProjectPHPClassBrowser(sublime_plugin.EventListener):
         if( window == None ):
           return
 
-        path = view.file_name()
-        rootPath = None
-
-        if path:
-          # Try to find the myproject.sublime-project file
-          for filename in ['*.sublime-project']:
-            rootPath = self.find_file(path, filename)
-
-        if rootPath:
-          utils = _projectPHPClassUtils(os.path.dirname(rootPath))
-        else:
-          utils = _projectPHPClassUtils(os.path.dirname(window.folders()[0]))
-
+        utils = _projectPHPClassUtils(None)
         if( utils.is_browser_view(view) != True ):
             return
 
@@ -306,11 +306,19 @@ class ProjectPHPClassBrowser(sublime_plugin.EventListener):
 
     def on_load(self, view):
         window = sublime.active_window()
-        utils = _projectPHPClassUtils(window.folders()[0])
+        utils = _projectPHPClassUtils(None)
         if( utils.is_browser_view(view) != True ):
             return
 
-        utils.fill_view(view)
+        path = view.file_name()
+        rootPath = None
+
+        if path:
+            # Try to find the myproject.sublime-project file
+            for filename in ['*.sublime-project']:
+                rootPath = self.find_file(path, filename)
+
+        view.run_command("fill_browser_view", {"rootPath": rootPath } )
 
     def on_post_save(self, view):
         settings = sublime.active_window().active_view().settings()
@@ -342,19 +350,22 @@ class ProjectPHPClassBrowser(sublime_plugin.EventListener):
                 completions_location = self.find_file(path, filename)
         if completions_location:
             data = []
-
             utils = _projectPHPClassUtils(os.path.dirname(completions_location))
             for classname in utils.get_db_classnames():
               classes = utils.get_db_data(classname)
 
               t = ()
-              for k, classdef in classes.iteritems():
-                  for methoddef in classdef.get('methods'):
-                      if re.match(prefix, methoddef.get('name'), re.IGNORECASE):
-                          t = methoddef.get('name')+'\t'+classdef.get('name'), methoddef.get('name')+re.sub('\$', '\\\$', methoddef.get('args'))
-                          data.append(t)
+              for k in sorted(classes.keys()):
+                classdef = classes[k]
+                for methoddef in classdef.get('methods'):
+                  if re.match(prefix, methoddef.get('name'), re.IGNORECASE):
+                    trigger = methoddef.get('name')+'\t'+classdef.get('name')
+                    contents = methoddef.get('name')+re.sub('\$', '\\\$', methoddef.get('args'))
+                    t = trigger, contents
+                    data.append(t)
 
             return data
+            # return (data,sublime.INHIBIT_EXPLICIT_COMPLETIONS)
         else:
             return []
 
