@@ -1,10 +1,10 @@
 # Project PHP Class Browser
 
-A Sublime Text 2 plugin which provides project's PHP classes browser.
+A Sublime Text 2/3 plugin which provides project's PHP classes browser.
 
 Requirements:
 
-  * Sublime Text 2
+  * Sublime Text
   * PHP cli, obviously (php executable must be in your $PATH environment variable)
 
 ## Installation instructions:
