@@ -22,7 +22,7 @@ class _projectPHPClassUtils:
           line = cfp.readline()
 
         cfp.close()
-        return data
+        return sorted(data)
 
     def get_db_data(self, classname):
         compPath = os.path.join( self.rootPath , self.dbFilename )
