@@ -6,58 +6,55 @@ class _projectPHPClassUtils:
         self.dbFilename = 'phpclass.sublime-classdb'
 
     def get_db_classnames(self):
-        compPath = os.path.join( self.rootPath , self.dbFilename )
-        cfp = open(compPath, 'r')
-
         data = []
-        line = cfp.readline()
-        while len(line) != 0:
-          try:
-            filepath,linedef,cname,cmethod,cargs,cvisibility,ccontext = line.split(";")
-            if( data.count(cname) == 0 ):
-              data.append(cname)
-          except:
-            # print "errors with line: %s" % (line,)
-            pass
-          line = cfp.readline()
 
-        cfp.close()
+        compPath = os.path.join( self.rootPath , self.dbFilename )
+        with open(compPath, 'r') as cfp:
+          line = cfp.readline()
+          while len(line) != 0:
+            try:
+              filepath,linedef,cname,cmethod,cargs,cvisibility,ccontext = line.split(";")
+              if( data.count(cname) == 0 ):
+                data.append(cname)
+            except:
+              # print "errors with line: %s" % (line,)
+              pass
+            line = cfp.readline()
+
         return sorted(data)
 
     def get_db_data(self, classname):
-        compPath = os.path.join( self.rootPath , self.dbFilename )
-        cfp = open(compPath, 'r')
-
         data = {}
-        line = cfp.readline()
-        while len(line) != 0:
-          try:
-            filepath,linedef,cname,cmethod,cargs,cvisibility,ccontext = line.split(";")
-            if( cname == classname ):
-              classline, methodspan = linedef[1:-1].split('-')
-              methodline = int(classline) + int(methodspan)
 
-              if( (cname in data) == False ):
-                  data[cname.strip()] = { 'name': cname.strip(), 'methods': [] , 'filepath' : filepath.strip(), 'line' : int(classline) }
-
-              data[cname.strip()]['methods'].append( {
-                  'name': cmethod,
-                  'args': cargs,
-                  'definition': ' '.join([cvisibility.strip(),ccontext.strip()]).strip() +' '+cmethod.strip()+cargs.strip(),
-                  'line': methodline
-              } )
-          except:
-            # print "errors with line: %s" % (line,)
-            pass
-
+        compPath = os.path.join( self.rootPath , self.dbFilename )
+        with open(compPath, 'r') as cfp:
           line = cfp.readline()
-        cfp.close()
+          while len(line) != 0:
+            try:
+              filepath,linedef,cname,cmethod,cargs,cvisibility,ccontext = line.split(";")
+              if( cname == classname ):
+                classline, methodspan = linedef[1:-1].split('-')
+                methodline = int(classline) + int(methodspan)
+
+                if( (cname in data) == False ):
+                    data[cname.strip()] = { 'name': cname.strip(), 'methods': [] , 'filepath' : filepath.strip(), 'line' : int(classline) }
+
+                data[cname.strip()]['methods'].append( {
+                    'name': cmethod,
+                    'args': cargs,
+                    'definition': ' '.join([cvisibility.strip(),ccontext.strip()]).strip() +' '+cmethod.strip()+cargs.strip(),
+                    'line': methodline
+                } )
+            except:
+              # print "errors with line: %s" % (line,)
+              pass
+            line = cfp.readline()
+
         return data
 
     def dbPresent(self):
         compPath = os.path.join( self.rootPath , self.dbFilename )
-        ispresent = os.path.isfile(compPath)
-        return ispresent
+        return os.path.isfile(compPath)
 
     def is_browser_view(self, view):
         if(view.is_scratch() == True and view.name() == 'PHP Class Browser'):
@@ -87,21 +84,21 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
     def run(self):
         try:
             compPath = os.path.join( os.path.dirname(self.rootPath), 'phpclass.sublime-classdb' )
-            cfp = open(compPath, 'w')
-            cfp.close()
-            cfp = open(compPath, 'a')
 
-            patterns = ['.inc', '.php']
-            for root, dirs, files in os.walk(os.path.dirname(self.rootPath)):
-                for p in patterns:
-                    for f in files:
-                        if f.endswith(p):
-                            #parse the file and save class methods
-                            filepath = os.path.join(root, f)
-                            parser = os.path.join( sublime.packages_path() , 'Project PHP ClassBrowser', 'parse_file.php' )
-                            pipe = subprocess.Popen([self.get_php_executable(), parser, filepath], stdout=cfp, stderr=cfp)
-                            out, err = pipe.communicate()
-            cfp.close()
+            with open(compPath, 'w') as cfp:
+              cfp.close()
+
+            with open(compPath, 'a') as cfp:
+              patterns = ['.inc', '.php']
+              for root, dirs, files in os.walk(os.path.dirname(self.rootPath)):
+                  for p in patterns:
+                      for f in files:
+                          if f.endswith(p):
+                              #parse the file and save class methods
+                              filepath = os.path.join(root, f)
+                              parser = os.path.join( sublime.packages_path() , 'Project PHP ClassBrowser', 'parse_file.php' )
+                              pipe = subprocess.Popen([self.get_php_executable(), parser, filepath], stdout=cfp, stderr=cfp)
+                              out, err = pipe.communicate()
 
             # try to update browser window
             window = sublime.active_window()
