@@ -111,6 +111,10 @@ function get_php_classes_with_methods($php_code) {
 
       if(($tokens[$i][0] == '{' || $tokens[$i][0] == ';') && $wait_for_open_braket == TRUE){
         if(isset($current_function_definition['name']) && !empty($current_function_definition['name'])){
+
+          $function_args = str_replace("\n"," ",$function_args);
+          $function_args = preg_replace("/\s+/msi"," ", $function_args);
+
           $current_function_definition += array( 'args' => trim($function_args) );
           $current_function_definition += array( 'context' => NULL );
           $class_methods[] = $current_function_definition;
