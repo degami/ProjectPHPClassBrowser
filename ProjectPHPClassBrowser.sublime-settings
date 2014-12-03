@@ -1,3 +1,7 @@
 {
-    "php_executable": "php"
+    // php executable
+    "php_executable": "php",
+
+    // default class browser order: can be one of "alpha" or "definition"
+    "class_order": "alpha"
 }

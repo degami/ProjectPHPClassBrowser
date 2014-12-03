@@ -21,7 +21,7 @@ class _projectPHPClassUtils:
               pass
             line = cfp.readline()
 
-        return sorted(data)
+        return data
 
     def get_db_data(self, classname):
         data = {}
@@ -189,7 +189,12 @@ class FillBrowserViewCommand(sublime_plugin.TextCommand):
         foldregions = []
         numregions = 0;
 
-        for classname in utils.get_db_classnames():
+        classnames = utils.get_db_classnames()
+
+        if( self.get_classnames_order() == 'alpha' ):
+            classnames = sorted(classnames)
+
+        for classname in classnames:
           data = utils.get_db_data(classname)
 
           for k in sorted(data.keys()):
@@ -214,6 +219,13 @@ class FillBrowserViewCommand(sublime_plugin.TextCommand):
         view.end_edit(edit)
         view.set_read_only(True)
         return
+
+    def get_classnames_order(self):
+        settings = sublime.load_settings('ProjectPHPClassBrowser.sublime-settings')
+        order = settings.get('class_order') or 'alpha'
+        if( order != 'alpha' and order != 'definition'):
+            order = 'alpha'
+        return order
 
 class ClickPhpclassBrowser(sublime_plugin.TextCommand):
     def run(self, edit):
