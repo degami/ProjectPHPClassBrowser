@@ -9,7 +9,7 @@ class _projectPHPClassUtils:
         data = []
 
         compPath = os.path.join( self.rootPath , self.dbFilename )
-        with open(compPath, 'r') as cfp:
+        with codecs.open(compPath, 'r', encoding='utf-8', errors='ignore') as cfp:
           line = cfp.readline()
           while len(line) != 0:
             try:
@@ -27,7 +27,7 @@ class _projectPHPClassUtils:
         data = {}
 
         compPath = os.path.join( self.rootPath , self.dbFilename )
-        with open(compPath, 'r') as cfp:
+        with codecs.open(compPath, 'r', encoding='utf-8', errors='ignore') as cfp:
           line = cfp.readline()
           while len(line) != 0:
             try:
@@ -84,7 +84,6 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
     def run(self):
         try:
             compPath = os.path.join( os.path.dirname(self.rootPath), 'phpclass.sublime-classdb' )
-
             with open(compPath, 'w') as cfp:
               cfp.close()
 
