@@ -96,11 +96,29 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
         settings = sublime.load_settings('ProjectPHPClassBrowser.sublime-settings')
         return settings.get('php_executable') or 'php'
 
+
+    def get_parser_file(self):
+      if(int(sublime.version()) >= 3000):
+        parsercontents = sublime.load_resource('Packages/Project PHP ClassBrowser/parse_file.php')
+        parser_path = os.path.join( sublime.packages_path() , 'Project PHP ClassBrowser', 'parse_file.php' )
+        with codecs.open(parser_path, 'w', encoding='utf-8', errors='ignore') as cfp:
+          cfp.write(parsercontents)
+
+        if(os.path.isfile(parser_path)):
+          return parser_path
+
+      else:
+        return os.path.join( sublime.packages_path() , 'Project PHP ClassBrowser', 'parse_file.php' )
+
+      return None
+
     def run(self):
         try:
             compPath = os.path.join( os.path.dirname(self.rootPath), 'phpclass.sublime-classdb' )
             with open(compPath, 'w') as cfp:
               cfp.close()
+
+            parser = self.get_parser_file()
 
             with open(compPath, 'a') as cfp:
               patterns = ['.inc', '.php']
@@ -110,7 +128,6 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
                           if f.endswith(p):
                               #parse the file and save class methods
                               filepath = os.path.join(root, f)
-                              parser = os.path.join( sublime.packages_path() , 'Project PHP ClassBrowser', 'parse_file.php' )
                               pipe = subprocess.Popen([self.get_php_executable(), parser, filepath], stdout=cfp, stderr=cfp)
                               out, err = pipe.communicate()
 
