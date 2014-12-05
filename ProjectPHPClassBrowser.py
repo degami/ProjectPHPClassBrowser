@@ -96,11 +96,18 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
         settings = sublime.load_settings('ProjectPHPClassBrowser.sublime-settings')
         return settings.get('php_executable') or 'php'
 
+    def ensure_dir(f):
+      d = os.path.dirname(f)
+      if not os.path.exists(d):
+          os.makedirs(d)
 
     def get_parser_file(self):
       if(int(sublime.version()) >= 3000):
         parsercontents = sublime.load_resource('Packages/Project PHP ClassBrowser/parse_file.php')
         parser_path = os.path.join( sublime.packages_path() , 'Project PHP ClassBrowser', 'parse_file.php' )
+
+        self.ensure_dir(parser_path)
+
         with codecs.open(parser_path, 'w', encoding='utf-8', errors='ignore') as cfp:
           cfp.write(parsercontents)
 
