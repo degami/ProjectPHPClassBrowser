@@ -3,5 +3,11 @@
     "php_executable": "php",
 
     // default class browser order: can be one of "alpha" or "definition"
-    "class_order": "alpha"
+    "class_order": "alpha",
+
+    // show loading panel on class browser load. system seems to became insstable if enabled
+    "use_loading": false,
+
+    // enable completitions
+    "enable_completitions": true
 }
