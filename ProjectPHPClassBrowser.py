@@ -96,9 +96,8 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
         settings = sublime.load_settings('ProjectPHPClassBrowser.sublime-settings')
         return settings.get('php_executable') or 'php'
 
-    def ensure_dir(f):
+    def ensure_dir(self,f):
       d = os.path.dirname(f)
-      print(str(d))
       if not os.path.exists(d):
           os.makedirs(d)
           return os.path.exists(d)
@@ -111,8 +110,7 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
         parser_path = os.path.join( sublime.packages_path() , 'Project PHP ClassBrowser', 'parse_file.php' )
 
         direxists = self.ensure_dir(parser_path)
-        print(str(direxists))
-        with os.open(parser_path, 'w') as cfp:
+        with codecs.open(parser_path, 'w', encoding='utf-8', errors='ignore') as cfp:
           cfp.write(parsercontents)
 
         if(os.path.isfile(parser_path)):
@@ -148,6 +146,8 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
             browser_view = utils.find_browser_view()
             if(browser_view != None):
               browser_view.run_command("refresh_browser_view", {"rootPath": os.path.dirname(self.rootPath) } )
+
+            sublime.status_message('Project Class Scan Completed.')
 
             return
         except:
