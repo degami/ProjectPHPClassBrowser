@@ -98,6 +98,7 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
 
     def ensure_dir(f):
       d = os.path.dirname(f)
+      print(str(d))
       if not os.path.exists(d):
           os.makedirs(d)
           return os.path.exists(d)
