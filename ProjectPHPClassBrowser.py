@@ -108,7 +108,7 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
 
         self.ensure_dir(parser_path)
 
-        with codecs.open(parser_path, 'w', encoding='utf-8', errors='ignore') as cfp:
+        with os.open(parser_path, 'w') as cfp:
           cfp.write(parsercontents)
 
         if(os.path.isfile(parser_path)):
