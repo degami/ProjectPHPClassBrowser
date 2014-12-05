@@ -100,14 +100,17 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
       d = os.path.dirname(f)
       if not os.path.exists(d):
           os.makedirs(d)
+          return os.path.exists(d)
+      else :
+        return True
 
     def get_parser_file(self):
       if(int(sublime.version()) >= 3000):
         parsercontents = sublime.load_resource('Packages/Project PHP ClassBrowser/parse_file.php')
         parser_path = os.path.join( sublime.packages_path() , 'Project PHP ClassBrowser', 'parse_file.php' )
 
-        self.ensure_dir(parser_path)
-
+        direxists = self.ensure_dir(parser_path)
+        print(str(direxists))
         with os.open(parser_path, 'w') as cfp:
           cfp.write(parsercontents)
 
