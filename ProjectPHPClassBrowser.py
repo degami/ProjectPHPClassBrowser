@@ -64,7 +64,7 @@ class _projectPHPClassUtils:
         return os.path.isfile(compPath)
 
     def is_browser_view(self, view):
-        if(view.is_scratch() == True and view.name() == 'PHP Class Browser'):
+        if(view.is_scratch() == True and (view.name() == 'PHP Class Browser' or view.name() == 'PHP Class Methods')):
               return True
         return False
 
@@ -75,17 +75,40 @@ class _projectPHPClassUtils:
                 return view
         return None
 
+    def find_methods_view(self):
+        window = sublime.active_window()
+        for view in window.views():
+            if(self.is_browser_view(view) and view.name() == 'PHP Class Methods'):
+                return view
+        return None
+
     def is_updating_view(self, view):
         if(view.is_scratch() == True and view.name() == 'Please wait.'):
             return True
         return False
 
-    def find_updating_view(self):
+    def find_updating_views(self):
         window = sublime.active_window()
+        views = []
         for view in window.views():
             if(self.is_updating_view(view)):
-                return view
-        return None
+                views.append(view)
+        return views
+
+    def close_all_updating(self):
+        window = sublime.active_window()
+        updatingviews = self.find_updating_views()
+        for updatingview in updatingviews:
+            window.focus_view(updatingview)
+            window.run_command('close')
+
+    def get_num_panels(self):
+        settings = sublime.load_settings('ProjectPHPClassBrowser.sublime-settings')
+        use_two = settings.get('two_panels') or False
+        if( isinstance(use_two, bool) ):
+            if( use_two == True):
+                return 2
+        return 1
 
 class ProjectPHPClassCompletionsScan(threading.Thread):
     def __init__(self, rootPath, timeout):
@@ -154,6 +177,9 @@ class OpenUpdatingCommand(sublime_plugin.TextCommand):
         view = self.view
         view.set_read_only(False)
         view.set_scratch(True)
+        # remove view content if present
+        viewcontent = sublime.Region(0,view.size())
+        view.erase(edit,viewcontent)
         view.set_name('Please wait.')
         view.insert(edit, view.size(),'Updating list... ')
         view.set_read_only(True)
@@ -173,14 +199,24 @@ class ProjectPhpclassOpenLayoutCommand(sublime_plugin.WindowCommand):
         settings = sublime.load_settings('phpclass_browser.sublime-settings')
         settings.set('php_class_browser_revert_layout',oldlayout)
         sublime.save_settings('phpclass_browser.settings')
-        window.set_layout({
-            "cols": [0.0, 1.0],
-            "rows": [0, 0.75, 1],
-            "cells": [[0, 0, 1, 1], [0, 1, 1, 2]]
-        })
-        window.focus_group(1)
-        browser_view = window.new_file()
-        browser_view.run_command("refresh_browser_view", {"rootPath": window.folders()[0] } )
+
+        layout = self.get_layout_config(utils.get_num_panels())
+        window.set_layout(layout)
+        window.run_command("refresh_browser_view", {"rootPath": window.folders()[0] } )
+
+    def get_layout_config(self, num_panels):
+        if(num_panels == 2):
+            return {
+                'cols': [0.0, 0.5, 1.0],
+                'rows': [0.0, 0.75, 1.0],
+                'cells': [[0, 0, 2, 1], [0, 1, 1, 2], [1, 1, 2, 2]]
+            }
+        else:
+            return {
+                'cols': [0.0, 1.0],
+                'rows': [0, 0.75, 1],
+                'cells': [[0, 0, 1, 1], [0, 1, 1, 2]]
+            }
 
 class ProjectPhpclassCloseLayoutCommand(sublime_plugin.WindowCommand):
     def run(self):
@@ -196,10 +232,13 @@ class ProjectPhpclassCloseLayoutCommand(sublime_plugin.WindowCommand):
                 "cells": [[0, 0, 1, 1]]
             })
         utils = _projectPHPClassUtils(window.folders()[0])
-        updating_view = utils.find_updating_view()
-        if( updating_view != None ):
-            window.focus_view(updating_view)
-            window.run_command('close')
+        utils.close_all_updating()
+
+        if(utils.get_num_panels() == 2):
+            methodsview = utils.find_methods_view()
+            if( methodsview != None ):
+                window.focus_view(methodsview)
+                window.run_command('close')
         browser_view = utils.find_browser_view()
         if( browser_view != None ):
             window.focus_view(browser_view)
@@ -207,7 +246,10 @@ class ProjectPhpclassCloseLayoutCommand(sublime_plugin.WindowCommand):
         window.focus_group(0)
 
 class FillBrowserViewCommand(sublime_plugin.TextCommand):
-    def run(self, edit, rootPath):
+    def run(self, edit, args):
+        rootPath = args.get('rootPath')
+        group = args.get('group') or 1
+        classname = args.get('classname') or None
         view = self.view
         window = sublime.active_window()
         # remove view content if present
@@ -217,12 +259,68 @@ class FillBrowserViewCommand(sublime_plugin.TextCommand):
             utils = _projectPHPClassUtils(rootPath)
         else:
             utils = _projectPHPClassUtils(window.folders()[0])
-        regions = []
-        foldregions = []
-        numregions = 0
+        if(utils.get_num_panels() == 2):
+            window.focus_group(group)
+            if(group == 1):
+                self._fill_classes(view, edit, utils)
+            else:
+                classes = self._get_classes(utils)
+                if(classname == None):
+                    classname = classes[0]
+                self._fill_methods(view, edit, utils, classname)
+        else:
+            self._allinone(view, edit, utils)
+            utils.close_all_updating();
+
+    def _get_classes(self, utils):
         classnames = utils.get_db_classnames()
         if( self.get_classnames_order() == 'alpha' ):
             classnames = sorted(classnames)
+        return classnames
+
+    def _fill_classes(self, view, edit, utils):
+        view.set_read_only(False)
+        viewcontent = sublime.Region(0,view.size())
+        view.erase(edit,viewcontent)
+        regions = []
+        numregions = 0
+        classnames = self._get_classes(utils)
+        for classname in classnames:
+            data = utils.get_db_data(classname)
+            for k in sorted(data.keys()):
+                item = data[k]
+                if(numregions > 0):
+                    view.insert(edit, view.size(),'\n')
+                numregions += 1
+                initregion = view.size()
+                view.insert(edit, view.size(), item.get('name'))
+                endregion = view.size()
+                regions.append(sublime.Region(initregion,endregion))
+                # view.insert(edit, view.size(),'\n')
+        view.add_regions('classbrowser' , regions, 'classbrowser', 'bookmark',sublime.DRAW_OUTLINED)
+        view.end_edit(edit)
+        view.set_read_only(True)
+
+    def _fill_methods(self, view, edit, utils, classname):
+        # remove view content if present
+        view.set_read_only(False)
+        viewcontent = sublime.Region(0,view.size())
+        view.erase(edit,viewcontent)
+        data = utils.get_db_data(classname)
+        for k in sorted(data.keys()):
+            item = data[k]
+            view.insert(edit, view.size(), item.get('name'))
+            view.insert(edit, view.size(),'\n\t# '+item.get('filepath'))
+            for method in item.get('methods'):
+                view.insert(edit, view.size(),'\n\t' + method.get('definition'))
+        view.end_edit(edit)
+        view.set_read_only(True)
+
+    def _allinone(self, view, edit, utils):
+        regions = []
+        foldregions = []
+        numregions = 0
+        classnames = self._get_classes(utils)
         for classname in classnames:
             data = utils.get_db_data(classname)
             for k in sorted(data.keys()):
@@ -245,10 +343,6 @@ class FillBrowserViewCommand(sublime_plugin.TextCommand):
         view.fold(foldregions)
         view.end_edit(edit)
         view.set_read_only(True)
-        updatingview = utils.find_updating_view()
-        if(updatingview != None):
-            window.focus_view(updatingview)
-            window.run_command('close')
 
     def get_classnames_order(self):
         settings = sublime.load_settings('ProjectPHPClassBrowser.sublime-settings')
@@ -257,8 +351,8 @@ class FillBrowserViewCommand(sublime_plugin.TextCommand):
             order = 'alpha'
         return order
 
-class RefreshBrowserViewCommand(sublime_plugin.TextCommand):
-    def run(self, edit, rootPath):
+class RefreshBrowserViewCommand(sublime_plugin.WindowCommand):
+    def run(self, rootPath):
         window = sublime.active_window()
         if rootPath:
             utils = _projectPHPClassUtils(rootPath)
@@ -268,20 +362,36 @@ class RefreshBrowserViewCommand(sublime_plugin.TextCommand):
         if( utils.dbPresent() != True ):
             sublime.status_message('No DataBase Found!')
             return
-        view = self.view
-        view.set_scratch(True)
-        view.set_name('PHP Class Browser')
-        view.set_read_only(False)
-        # remove view content if present
-        viewcontent = sublime.Region(0,view.size())
-        view.erase(edit,viewcontent)
+
+        views = []
+
+        view = self.open_new_view(window, 1, 'PHP Class Browser')
+        views.append(view)
 
         if( self.get_use_loading() == True):
             window.focus_view(view)
             updatingview = window.new_file()
             updatingview.run_command("open_updating")
-        thread = ProjectPHPClassBrowserFiller(view, rootPath)
+
+        if(utils.get_num_panels() == 2):
+            view = self.open_new_view(window, 2, 'PHP Class Methods')
+            views.append(view)
+
+            if( self.get_use_loading() == True):
+                window.focus_view(view)
+                updatingview = window.new_file()
+                updatingview.run_command("open_updating")
+
+        thread = ProjectPHPClassBrowserFiller(views, rootPath)
         thread.start()
+
+    def open_new_view(self, window, group, name):
+        window.focus_group(group)
+        view = window.new_file()
+        view.set_scratch(True)
+        view.set_name(name)
+        view.set_read_only(False)
+        return view
 
     def get_use_loading(self):
         settings = sublime.load_settings('ProjectPHPClassBrowser.sublime-settings')
@@ -291,13 +401,19 @@ class RefreshBrowserViewCommand(sublime_plugin.TextCommand):
         return False
 
 class ProjectPHPClassBrowserFiller(threading.Thread):
-    def __init__(self, view, rootPath):
+    def __init__(self, views, rootPath):
         threading.Thread.__init__(self)
-        self.view = view
+        self.views = views
         self.rootPath = rootPath
 
     def run(self):
-        self.view.run_command("fill_browser_view", { "rootPath" : self.rootPath })
+        if(len(self.views) == 2):
+            for index,view in enumerate(self.views):
+                view.run_command("fill_browser_view", { "args": {"rootPath" : self.rootPath, "group": index+1, "classname":None} })
+        elif(len(self.views) == 1):
+            self.views[0].run_command("fill_browser_view", { "args": {"rootPath" : self.rootPath, "group": 1, "classname":None} })
+        else:
+            sublime.status_message('No views to fill!!')
 
 class ClickPhpclassBrowser(sublime_plugin.TextCommand):
     def run(self, edit):
@@ -306,8 +422,11 @@ class ClickPhpclassBrowser(sublime_plugin.TextCommand):
         utils = _projectPHPClassUtils(window.folders()[0])
         if( utils.is_browser_view(view) != True ):
             return
-        window.focus_view(view)
         point = view.sel()[0]
+        if(point.begin() == point.end()):
+            return
+
+        window.focus_view(view)
         word = view.substr(view.word(point))
         line = view.substr(view.line(point))
         methodname = None
@@ -328,21 +447,36 @@ class ClickPhpclassBrowser(sublime_plugin.TextCommand):
         classname = classname.split('\n')[0].strip()
         if(len(classname)>0):
             try:
-                data = utils.get_db_data(classname)
-                window.focus_group(0)
-                window.open_file(data.get(classname)['filepath'])
-                new_view = window.active_view()
-                if( methodname != None ):
-                    for methoddefinition in data.get(classname)['methods']:
-                        if( methoddefinition['name'] == methodname ):
-                            new_view.run_command("goto_line", {"line": methoddefinition['line'] } )
-                            return
-                    #if not found
-                    new_view.run_command("goto_line", {"line": data.get(classname)['line'] } )
+                if(utils.get_num_panels() == 2):
+                    if(view.name() == 'PHP Class Methods'):
+                        # in methods view. open file definition
+                        self._open_file_definition(window, utils, classname, methodname)
+                    else:
+                        # in classes view. update methods view
+                        methodview = utils.find_methods_view()
+                        args = {"rootPath" : window.folders()[0], "group": 2, "classname": classname}
+                        methodview.run_command("fill_browser_view", { "args": args })
                 else:
-                    new_view.run_command("goto_line", {"line": data.get(classname)['line'] } )
+                    # all in one... go, go, go!
+                    self._open_file_definition(window, utils, classname, methodname)
             except:
                 sublime.status_message('Unknown Class Name: '+str(classname))
+
+    def _open_file_definition(self, window, utils, classname, methodname):
+        data = utils.get_db_data(classname)
+        window.focus_group(0)
+        window.open_file(data.get(classname)['filepath'])
+        new_view = window.active_view()
+        if( methodname != None ):
+            for methoddefinition in data.get(classname)['methods']:
+                if( methoddefinition['name'] == methodname ):
+                    new_view.run_command("goto_line", {"line": methoddefinition['line'] } )
+                    return
+            #if not found
+            new_view.run_command("goto_line", {"line": data.get(classname)['line'] } )
+        else:
+            new_view.run_command("goto_line", {"line": data.get(classname)['line'] } )
+
 
 class GotoLineCommand(sublime_plugin.TextCommand):
     def run(self, edit, line):

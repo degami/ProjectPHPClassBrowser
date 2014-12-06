@@ -9,5 +9,8 @@
     "use_loading": false,
 
     // enable completitions
-    "enable_completitions": true
+    "enable_completitions": true,
+
+    //use two panels
+    "two_panels": false
 }
