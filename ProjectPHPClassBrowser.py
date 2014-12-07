@@ -111,9 +111,9 @@ class _projectPHPClassUtils:
         return 1
 
 class ProjectPHPClassCompletionsScan(threading.Thread):
-    def __init__(self, rootPath, timeout):
+    def __init__(self, folders, timeout):
         threading.Thread.__init__(self)
-        self.rootPath = rootPath
+        self.folders = folders
         self.timeout = timeout
         self.result = None
 
@@ -144,28 +144,30 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
 
     def run(self):
         try:
-            utils = _projectPHPClassUtils(self.rootPath)
+            utils = _projectPHPClassUtils(self.folders[0])
             compPath = utils.get_db_path()
             if ( compPath == None ):
                 return
             with open(compPath, 'w') as cfp:
                 cfp.close()
             parser = self.get_parser_file()
-            with open(compPath, 'a') as cfp:
-                patterns = ['.inc', '.php']
-                for root, dirs, files in os.walk(self.rootPath):
-                    for p in patterns:
-                        for f in files:
-                            if f.endswith(p):
-                                #parse the file and save class methods
-                                filepath = os.path.join(root, f)
-                                pipe = subprocess.Popen([self.get_php_executable(), parser, filepath], stdout=cfp, stderr=cfp)
-                                out, err = pipe.communicate()
+
+            for rootPath in self.folders:
+                with open(compPath, 'a') as cfp:
+                    patterns = ['.inc', '.php']
+                    for root, dirs, files in os.walk(rootPath):
+                        for p in patterns:
+                            for f in files:
+                                if f.endswith(p):
+                                    #parse the file and save class methods
+                                    filepath = os.path.join(root, f)
+                                    pipe = subprocess.Popen([self.get_php_executable(), parser, filepath], stdout=cfp, stderr=cfp)
+                                    out, err = pipe.communicate()
             # try to update browser window
             window = sublime.active_window()
             browser_view = utils.find_browser_view()
             if(browser_view != None):
-                browser_view.run_command("refresh_browser_view", {"rootPath": self.rootPath } )
+                browser_view.run_command("refresh_browser_view", {"rootPath": self.folders[0] } )
             sublime.status_message('Project Class Scan Completed.')
         except:
             exc = sys.exc_info()[1]
@@ -187,13 +189,18 @@ class OpenUpdatingCommand(sublime_plugin.TextCommand):
 class ProjectPhpclassOpenLayoutCommand(sublime_plugin.WindowCommand):
     def run(self):
         window = sublime.active_window()
-        utils = _projectPHPClassUtils(window.folders()[0])
+        rootPath = window.folders()[0]
+        if(int(sublime.version()) >= 3000):
+            # ST3 - use project data
+            project_data = window.project_data()
+            rootPath = project_data.get('folders')[0].get('path')
+        utils = _projectPHPClassUtils(rootPath)
         if( utils.dbPresent() != True ):
             sublime.status_message('No DataBase Found!')
             return
         browser_view = utils.find_browser_view()
         if( browser_view != None ):
-            browser_view.run_command("refresh_browser_view", {"rootPath": window.folders()[0] } )
+            browser_view.run_command("refresh_browser_view", {"rootPath": rootPath } )
             return
         oldlayout = window.get_layout()
         settings = sublime.load_settings('phpclass_browser.sublime-settings')
@@ -202,7 +209,7 @@ class ProjectPhpclassOpenLayoutCommand(sublime_plugin.WindowCommand):
 
         layout = self.get_layout_config(utils.get_num_panels())
         window.set_layout(layout)
-        window.run_command("refresh_browser_view", {"rootPath": window.folders()[0] } )
+        window.run_command("refresh_browser_view", {"rootPath": rootPath } )
 
     def get_layout_config(self, num_panels):
         if(num_panels == 2):
@@ -231,9 +238,9 @@ class ProjectPhpclassCloseLayoutCommand(sublime_plugin.WindowCommand):
                 "rows": [0, 1],
                 "cells": [[0, 0, 1, 1]]
             })
+        # here rootPath could be also None
         utils = _projectPHPClassUtils(window.folders()[0])
         utils.close_all_updating()
-
         if(utils.get_num_panels() == 2):
             methodsview = utils.find_methods_view()
             if( methodsview != None ):
@@ -258,7 +265,12 @@ class FillBrowserViewCommand(sublime_plugin.TextCommand):
         if rootPath:
             utils = _projectPHPClassUtils(rootPath)
         else:
-            utils = _projectPHPClassUtils(window.folders()[0])
+            if(int(sublime.version()) >= 3000):
+                # ST3 - use project data
+                project_data = window.project_data()
+                utils = _projectPHPClassUtils( project_data.get('folders')[0].get('path') )
+            else:
+                utils = _projectPHPClassUtils( window.folders()[0] )
         if(utils.get_num_panels() == 2):
             window.focus_group(group)
             if(group == 1):
@@ -357,8 +369,14 @@ class RefreshBrowserViewCommand(sublime_plugin.WindowCommand):
         if rootPath:
             utils = _projectPHPClassUtils(rootPath)
         else:
-            utils = _projectPHPClassUtils(window.folders()[0])
-            rootPath = window.folders()[0]
+            if(int(sublime.version()) >= 3000):
+                # ST3 - use project data
+                project_data = window.project_data()
+                utils = _projectPHPClassUtils( project_data.get('folders')[0].get('path') )
+                rootPath = project_data.get('folders')[0].get('path')
+            else:
+                utils = _projectPHPClassUtils( window.folders()[0] )
+                rootPath = window.folders()[0]
         if( utils.dbPresent() != True ):
             sublime.status_message('No DataBase Found!')
             return
@@ -419,7 +437,12 @@ class ClickPhpclassBrowser(sublime_plugin.TextCommand):
     def run(self, edit):
         view = self.view
         window = sublime.active_window()
-        utils = _projectPHPClassUtils(window.folders()[0])
+        if(int(sublime.version()) >= 3000):
+            # ST3 - use project data
+            project_data = window.project_data()
+            utils = _projectPHPClassUtils( project_data.get('folders')[0].get('path') )
+        else:
+            utils = _projectPHPClassUtils( window.folders()[0] )
         if( utils.is_browser_view(view) != True ):
             return
         point = view.sel()[0]
@@ -454,7 +477,11 @@ class ClickPhpclassBrowser(sublime_plugin.TextCommand):
                     else:
                         # in classes view. update methods view
                         methodview = utils.find_methods_view()
-                        args = {"rootPath" : window.folders()[0], "group": 2, "classname": classname}
+                        rootPath = window.folders()[0]
+                        if(int(sublime.version()) >= 3000):
+                            project_data = window.project_data()
+                            rootPath = project_data.get('folders')[0].get('path')
+                        args = {"rootPath" : rootPath, "group": 2, "classname": classname}
                         methodview.run_command("fill_browser_view", { "args": args })
                 else:
                     # all in one... go, go, go!
@@ -510,30 +537,26 @@ class ProjectPHPClassBrowser(sublime_plugin.EventListener):
         utils = _projectPHPClassUtils(None)
         if( utils.is_browser_view(view) != True ):
             return
-        path = view.file_name()
-        rootPath = None
-        if path:
-            # Try to find the myproject.sublime-project file
-            for filename in ['*.sublime-project']:
-                rootPath = self.find_file(path, filename)
-        view.run_command("refresh_browser_view", {"rootPath": rootPath } )
+        folders = self.get_project_folders(view)
+        view.run_command("refresh_browser_view", {"rootPath": folders[0] } )
+        for folder in folders:
+            rootPath = self.find_file(folder, '*.sublime-project')
+            if( os.path.isfile( rootPath ) ):
+                view.run_command("refresh_browser_view", {"rootPath": rootPath } )
+                return
+        # none found
+        sublime.status_message('Project file not found.')
 
     def on_post_save(self, view):
         settings = sublime.active_window().active_view().settings()
         if( settings.get('scan_php_classes') != True ):
             return
-        path = view.file_name()
-        rootPath = None
-        if path:
-            # Try to find the myproject.sublime-project file
-            for filename in ['*.sublime-project']:
-                rootPath = self.find_file(path, filename)
-        if rootPath:
-            rootPath = os.path.dirname(rootPath)
-            threads = []
-            thread = ProjectPHPClassCompletionsScan(rootPath, 5)
-            threads.append(thread)
-            thread.start()
+
+        folders = self.get_project_folders(view)
+        threads = []
+        thread = ProjectPHPClassCompletionsScan(folders, 5)
+        threads.append(thread)
+        thread.start()
 
     def on_query_completions(self, view, prefix, locations):
         if not view.match_selector(locations[0], "source.php"):
@@ -588,3 +611,31 @@ class ProjectPHPClassBrowser(sublime_plugin.EventListener):
             if continue_at == start_at:
                 return None
             start_at = continue_at
+
+    def get_project_folders(self, view):
+        window = sublime.active_window()
+        if(int(sublime.version()) >= 3000):
+            # ST3 - use project data
+            project_data = window.project_data()
+            out = []
+            for folder in project_data.get('folders'):
+                out.append(folder.get('path'))
+            if (len(out) == 0):
+                return window.folders()
+            return out
+        else:
+            # ST2 - try to find data
+            if(view != None):
+                path = view.file_name()
+                completions_location = None
+                if path:
+                    location = None
+                    # Try to find the phpclass.sublime-classdb file
+                    for filename in ['phpclass.sublime-classdb']:
+                        location = os.path.dirname(self.find_file(path, filename))
+                    if location:
+                        return [location]
+                    else:
+                        sublime.status_message('Sublime project file not found. Are you sure it is saved in the root of your project?')
+            # nothing found
+            return window.folders()

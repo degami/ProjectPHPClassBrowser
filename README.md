@@ -13,8 +13,10 @@ Install with package manager or clone the repository in your packages folder
 
 ## Usage instructions:
 
-You must have a Sublime Text project file saved in the root of the project.
+If you are on ST2 You **must** have a Sublime Text project file saved in the root of the project.
 To do this open your Project files (drag and drop the whole directory onto Sublime Text) and then save a new project by using the Project menu item.
+This because the ST2 api does not let fetching data from project as ST3 api does.
+For ST3 users, project_data() is used, and the file will be saved in the first folder of your project
 
 Then enable the classes scan by adding a setting
 
