@@ -33,10 +33,28 @@ Suggestions on the autocomplete palette are also available ( note that it's up t
 
 In the settings file ( under Package Settings > Project PHP ClassBrowser ) you will find preferences for:
 
-  * "php_executable": "php" // php executable
-  * "class_order": "alpha" // default class browser order: can be one of "alpha" or "definition"
-  * "enable_completitions": true // enable completitions
-  * "two_panels": false //use two panels
+  * "php_executable"        // php executable
+  * "class_order"           // default class browser order: can be one of "alpha" or "definition"
+  * "enable_completitions"  // enable completitions
+  * "two_panels"            // use two panels
+  * "one_panel_layout"      // Layout for one panel mode
+  * "two_panel_layout"      // Layout for two panels mode
 
 If you have many classes / functions and the loading is slow try to use the two_panels mode,
 as data is loaded when needed, or try to disable completitions
+
+If you prefer a "vertical" layout i suggest you to set
+
+  "one_panel_layout":{
+    "cols": [0.0, 0.75, 1.0],
+    "rows": [0.0, 1.0],
+    "cells": [[0, 0, 1, 1], [1, 0, 2, 1]]
+  },
+
+  "two_panel_layout":{
+    "cols": [0.0, 0.75, 1.0],
+    "rows": [0.0, 0.5, 1.0],
+    "cells": [[0, 0, 1, 2], [1, 0, 2, 1], [1, 1, 2, 2]]
+  }
+
+in your user configuration

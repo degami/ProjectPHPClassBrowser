@@ -212,18 +212,33 @@ class ProjectPhpclassOpenLayoutCommand(sublime_plugin.WindowCommand):
         window.run_command("refresh_browser_view", {"rootPath": rootPath } )
 
     def get_layout_config(self, num_panels):
+        settings = sublime.load_settings('ProjectPHPClassBrowser.sublime-settings')
         if(num_panels == 2):
-            return {
-                'cols': [0.0, 0.5, 1.0],
-                'rows': [0.0, 0.75, 1.0],
-                'cells': [[0, 0, 2, 1], [0, 1, 1, 2], [1, 1, 2, 2]]
-            }
+          two_panel_layout = settings.get('two_panel_layout') or None
+          try:
+            if( two_panel_layout != None and len( two_panel_layout.get('cells') ) == 3):
+              return two_panel_layout
+          except:
+            pass
+          #two panels default
+          return {
+              'cols': [0.0, 0.5, 1.0],
+              'rows': [0.0, 0.75, 1.0],
+              'cells': [[0, 0, 2, 1], [0, 1, 1, 2], [1, 1, 2, 2]]
+          }
         else:
-            return {
-                'cols': [0.0, 1.0],
-                'rows': [0, 0.75, 1],
-                'cells': [[0, 0, 1, 1], [0, 1, 1, 2]]
-            }
+          one_panel_layout = settings.get('one_panel_layout') or None
+          try:
+            if( one_panel_layout != None and len( one_panel_layout.get('cells') ) == 2):
+              return one_panel_layout
+          except:
+            pass
+          #one panel default
+          return {
+              'cols': [0.0, 1.0],
+              'rows': [0, 0.75, 1],
+              'cells': [[0, 0, 1, 1], [0, 1, 1, 2]]
+          }
 
 class ProjectPhpclassCloseLayoutCommand(sublime_plugin.WindowCommand):
     def run(self):
@@ -631,10 +646,13 @@ class ProjectPHPClassBrowser(sublime_plugin.EventListener):
                 if path:
                     location = None
                     # Try to find the phpclass.sublime-classdb file
-                    for filename in ['phpclass.sublime-classdb']:
-                        location = os.path.dirname(self.find_file(path, filename))
+                    for filename in ['phpclass.sublime-classdb','*.sublime-project']:
+                      compPath = self.find_file(path, filename)
+                      if(compPath != None):
+                        location = os.path.dirname(compPath)
+                        break
                     if location:
-                        return [location]
+                      return [location]
                     else:
                         sublime.status_message('Sublime project file not found. Are you sure it is saved in the root of your project?')
             # nothing found
