@@ -178,6 +178,14 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
             return os.path.join( sublime.packages_path() , 'Project PHP ClassBrowser', 'parse_file.php' )
         return None
 
+    def get_parsable_extensions(self):
+        settings = sublime.load_settings('ProjectPHPClassBrowser.sublime-settings')
+        extensions = settings.get('file_extensions') or None
+        if(isinstance(extensions,list)):
+            return extensions
+        return ['.inc','.php']
+
+
     def run(self):
         try:
             utils = _projectPHPClassUtils(self.folders[0])
@@ -186,18 +194,18 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
                 return
             with open(compPath, 'w') as cfp:
                 cfp.close()
+            php_executable = self.get_php_executable()
             parser = self.get_parser_file()
-
+            patterns = self.get_parsable_extensions()
             for rootPath in self.folders:
                 with open(compPath, 'a') as cfp:
-                    patterns = ['.inc', '.php']
                     for root, dirs, files in os.walk(rootPath):
                         for p in patterns:
                             for f in files:
                                 if f.endswith(p):
                                     #parse the file and save class methods
                                     filepath = os.path.join(root, f)
-                                    pipe = subprocess.Popen([self.get_php_executable(), parser, filepath], stdout=cfp, stderr=cfp)
+                                    pipe = subprocess.Popen([php_executable, parser, filepath], stdout=cfp, stderr=cfp)
                                     out, err = pipe.communicate()
             # try to update browser window
             window = sublime.active_window()

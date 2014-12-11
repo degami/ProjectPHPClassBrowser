@@ -39,6 +39,7 @@ In the settings file ( under Package Settings > Project PHP ClassBrowser ) you w
   * "two_panels"            // use two panels
   * "one_panel_layout"      // Layout for one panel mode
   * "two_panel_layout"      // Layout for two panels mode
+  * "file_extensions"       // Files extensions to scan
 
 If you have many classes / functions and the loading is slow try to use the two_panels mode,
 as data is loaded when needed, or try to disable completitions
