@@ -15,17 +15,28 @@ class _projectPHPClassUtils:
         compPath = self.get_db_path()
         if (compPath == None):
           return []
-        with codecs.open(compPath, 'r', encoding='utf-8', errors='ignore') as cfp:
-            line = cfp.readline()
-            while len(line) != 0:
-                try:
-                    filepath,linedef,cname,cmethod,cargs,cvisibility,ccontext = line.split(";")
-                    if( data.count(cname) == 0 ):
-                        data.append(cname)
-                except:
-                    # print "errors with line: %s" % (line,)
-                    pass
-                line = cfp.readline()
+        if(['linux','osx'].count(sublime.platform())):
+          # posix, use cut
+          try:
+            command = 'cut -d ";" -f 3 ' + compPath
+            pipe = subprocess.Popen([command], shell=True ,stdout=subprocess.PIPE ,stderr=subprocess.PIPE)
+            out, err = pipe.communicate()
+            data = list(set(out.split("\n")))
+          except:
+            exc = sys.exc_info()[1]
+            sublime.status_message(str(exc))
+        else:
+          with codecs.open(compPath, 'r', encoding='utf-8', errors='ignore') as cfp:
+              line = cfp.readline()
+              while len(line) != 0:
+                  try:
+                      filepath,linedef,cname,cmethod,cargs,cvisibility,ccontext = line.split(";")
+                      if( data.count(cname) == 0 ):
+                          data.append(cname)
+                  except:
+                      # print "errors with line: %s" % (line,)
+                      pass
+                  line = cfp.readline()
         return data
 
     def get_db_data(self, classname):
@@ -33,28 +44,53 @@ class _projectPHPClassUtils:
         compPath = self.get_db_path()
         if (compPath == None):
           return {}
-        with codecs.open(compPath, 'r', encoding='utf-8', errors='ignore') as cfp:
-            line = cfp.readline()
-            while len(line) != 0:
-                try:
-                    filepath,linedef,cname,cmethod,cargs,cvisibility,ccontext = line.split(";")
-                    if( cname == classname ):
-                        classline, methodspan = linedef[1:-1].split('-')
-                        methodline = int(classline) + int(methodspan)
+        if(['linux','osx'].count(sublime.platform())):
+          # posix, use grep
+          command = 'grep ";'+classname+';" ' + compPath
+          pipe = subprocess.Popen([command], shell=True ,stdout=subprocess.PIPE ,stderr=subprocess.PIPE)
+          out, err = pipe.communicate()
+          for line in out.split("\n"):
+            try:
+                filepath,linedef,cname,cmethod,cargs,cvisibility,ccontext = line.split(";")
+                if( cname == classname ):
+                    classline, methodspan = linedef[1:-1].split('-')
+                    methodline = int(classline) + int(methodspan)
 
-                        if( (cname in data) == False ):
-                           data[cname.strip()] = { 'name': cname.strip(), 'methods': [] , 'filepath' : filepath.strip(), 'line' : int(classline) }
+                    if( (cname in data) == False ):
+                       data[cname.strip()] = { 'name': cname.strip(), 'methods': [] , 'filepath' : filepath.strip(), 'line' : int(classline) }
 
-                        data[cname.strip()]['methods'].append({
-                            'name': cmethod,
-                            'args': cargs,
-                            'definition': ' '.join([cvisibility.strip(),ccontext.strip()]).strip() +' '+cmethod.strip()+cargs.strip(),
-                            'line': methodline
-                        })
-                except:
-                    # print "errors with line: %s" % (line,)
-                    pass
-                line = cfp.readline()
+                    data[cname.strip()]['methods'].append({
+                        'name': cmethod,
+                        'args': cargs,
+                        'definition': ' '.join([cvisibility.strip(),ccontext.strip()]).strip() +' '+cmethod.strip()+cargs.strip(),
+                        'line': methodline
+                    })
+            except:
+                # print "errors with line: %s" % (line,)
+                pass
+        else:
+          with codecs.open(compPath, 'r', encoding='utf-8', errors='ignore') as cfp:
+              line = cfp.readline()
+              while len(line) != 0:
+                  try:
+                      filepath,linedef,cname,cmethod,cargs,cvisibility,ccontext = line.split(";")
+                      if( cname == classname ):
+                          classline, methodspan = linedef[1:-1].split('-')
+                          methodline = int(classline) + int(methodspan)
+
+                          if( (cname in data) == False ):
+                             data[cname.strip()] = { 'name': cname.strip(), 'methods': [] , 'filepath' : filepath.strip(), 'line' : int(classline) }
+
+                          data[cname.strip()]['methods'].append({
+                              'name': cmethod,
+                              'args': cargs,
+                              'definition': ' '.join([cvisibility.strip(),ccontext.strip()]).strip() +' '+cmethod.strip()+cargs.strip(),
+                              'line': methodline
+                          })
+                  except:
+                      # print "errors with line: %s" % (line,)
+                      pass
+                  line = cfp.readline()
         return data
 
     def dbPresent(self):
