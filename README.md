@@ -25,6 +25,7 @@ Then enable the classes scan by adding a setting
 in your project file.
 
 After saving any file, a new file (containing the classes / method definition will be placed in the project root, named phpclass.sublime-classdb)
+The file is also created running the command "PHP Class browser: (Re)Create Database" from the command palette
 
 In the command palette you will find two new commands: "PHP Class browser: Open Browser" and "PHP Class browser: Close Browser" to open or close the class browser.
 Double clicking on a function name or on a classname will open the source file on the definition line.
