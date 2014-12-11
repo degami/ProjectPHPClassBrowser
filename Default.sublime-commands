@@ -1,4 +1,5 @@
 [
     {"caption": "PHP Class browser: Open Browser","command": "project_phpclass_open_layout"},
-    {"caption": "PHP Class browser: Close Browser","command": "project_phpclass_close_layout"}
+    {"caption": "PHP Class browser: Close Browser","command": "project_phpclass_close_layout"},
+    {"caption": "PHP Class browser: (Re)Create Database","command": "project_phpclass_create_database"}
 ]

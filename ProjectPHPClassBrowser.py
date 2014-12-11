@@ -208,7 +208,7 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
         except:
             exc = sys.exc_info()[1]
             sublime.status_message(str(exc))
-            raise
+            pass
 
 class OpenUpdatingCommand(sublime_plugin.TextCommand):
     def run(self, edit):
@@ -302,6 +302,24 @@ class ProjectPhpclassCloseLayoutCommand(sublime_plugin.WindowCommand):
             window.focus_view(browser_view)
             window.run_command('close')
         window.focus_group(0)
+
+class ProjectPhpclassCreateDatabaseCommand(sublime_plugin.WindowCommand):
+    def run(self):
+        window = sublime.active_window()
+        folders = []
+        if(int(sublime.version()) >= 3000):
+            # ST3 - use project data
+            project_data = window.project_data()
+            for folder in project_data.get('folders'):
+                folders.append(folder.get('path'))
+        else:
+            folders.append(window.folders()[0])
+
+        if(len(folders) > 0):
+            threads = []
+            thread = ProjectPHPClassCompletionsScan(folders, 5)
+            threads.append(thread)
+            thread.start()
 
 class FillBrowserViewCommand(sublime_plugin.TextCommand):
     def run(self, edit, args):
