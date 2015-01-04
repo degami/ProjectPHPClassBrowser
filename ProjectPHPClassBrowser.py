@@ -21,6 +21,7 @@ class _projectPHPClassUtils:
             command = 'cut -d ";" -f 3 ' + compPath
             pipe = subprocess.Popen([command], shell=True ,stdout=subprocess.PIPE ,stderr=subprocess.PIPE)
             out, err = pipe.communicate()
+            out = str(out.decode('utf-8'))
             data = list(set(out.split("\n")))
           except:
             exc = sys.exc_info()[1]
@@ -49,6 +50,7 @@ class _projectPHPClassUtils:
           command = 'grep ";'+classname+';" ' + compPath
           pipe = subprocess.Popen([command], shell=True ,stdout=subprocess.PIPE ,stderr=subprocess.PIPE)
           out, err = pipe.communicate()
+          out = str(out.decode('utf-8'))
           for line in out.split("\n"):
             try:
                 filepath,linedef,cname,cmethod,cargs,cvisibility,ccontext = line.split(";")
