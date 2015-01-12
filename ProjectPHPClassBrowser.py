@@ -148,6 +148,50 @@ class _projectPHPClassUtils:
                 return 2
         return 1
 
+    def find_file(self, start_at, look_for):
+        start_at = os.path.abspath(start_at)
+        if not os.path.isdir(start_at):
+            start_at = os.path.dirname(start_at)
+        while True:
+            for filename in os.listdir(start_at):
+                if fnmatch.fnmatch(filename, look_for):
+                    return os.path.join(start_at, filename)
+            continue_at = os.path.abspath(os.path.join(start_at, '..'))
+            if continue_at == start_at:
+                return None
+            start_at = continue_at
+
+    def get_project_folders(self, view):
+        window = sublime.active_window()
+        if(int(sublime.version()) >= 3000):
+            # ST3 - use project data
+            project_data = window.project_data()
+            out = []
+            for folder in project_data.get('folders'):
+                out.append(folder.get('path'))
+            if (len(out) == 0):
+                return window.folders()
+            return out
+        else:
+            # ST2 - try to find data
+            if(view != None):
+                path = view.file_name()
+                completions_location = None
+                if path:
+                    location = None
+                    # Try to find the phpclass.sublime-classdb file
+                    for filename in ['*.sublime-project', 'phpclass.sublime-classdb']:
+                      compPath = self.find_file(path, filename)
+                      if(compPath != None):
+                        location = os.path.dirname(compPath)
+                        break
+                    if location:
+                      return [location]
+                    else:
+                        sublime.status_message('Sublime project file not found. Are you sure it is saved in the root of your project?')
+            # nothing found
+            return window.folders()
+
 class ProjectPHPClassCompletionsScan(threading.Thread):
     def __init__(self, folders, timeout):
         threading.Thread.__init__(self)
@@ -186,7 +230,6 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
         if(isinstance(extensions,list)):
             return extensions
         return ['.inc','.php']
-
 
     def run(self):
         try:
@@ -616,10 +659,10 @@ class ProjectPHPClassBrowser(sublime_plugin.EventListener):
         utils = _projectPHPClassUtils(None)
         if( utils.is_browser_view(view) != True ):
             return
-        folders = self.get_project_folders(view)
+        folders = utils.get_project_folders(view)
         view.run_command("refresh_browser_view", {"rootPath": folders[0] } )
         for folder in folders:
-            rootPath = self.find_file(folder, '*.sublime-project')
+            rootPath = utils.find_file(folder, '*.sublime-project')
             if( os.path.isfile( rootPath ) ):
                 view.run_command("refresh_browser_view", {"rootPath": rootPath } )
                 return
@@ -631,7 +674,8 @@ class ProjectPHPClassBrowser(sublime_plugin.EventListener):
         if( settings.get('scan_php_classes') != True ):
             return
 
-        folders = self.get_project_folders(view)
+        utils = _projectPHPClassUtils(None)
+        folders = utils.get_project_folders(view)
         threads = []
         thread = ProjectPHPClassCompletionsScan(folders, 5)
         threads.append(thread)
@@ -677,47 +721,3 @@ class ProjectPHPClassBrowser(sublime_plugin.EventListener):
         if( isinstance(enable_completitions, bool) ):
             return enable_completitions
         return False
-
-    def find_file(self, start_at, look_for):
-        start_at = os.path.abspath(start_at)
-        if not os.path.isdir(start_at):
-            start_at = os.path.dirname(start_at)
-        while True:
-            for filename in os.listdir(start_at):
-                if fnmatch.fnmatch(filename, look_for):
-                    return os.path.join(start_at, filename)
-            continue_at = os.path.abspath(os.path.join(start_at, '..'))
-            if continue_at == start_at:
-                return None
-            start_at = continue_at
-
-    def get_project_folders(self, view):
-        window = sublime.active_window()
-        if(int(sublime.version()) >= 3000):
-            # ST3 - use project data
-            project_data = window.project_data()
-            out = []
-            for folder in project_data.get('folders'):
-                out.append(folder.get('path'))
-            if (len(out) == 0):
-                return window.folders()
-            return out
-        else:
-            # ST2 - try to find data
-            if(view != None):
-                path = view.file_name()
-                completions_location = None
-                if path:
-                    location = None
-                    # Try to find the phpclass.sublime-classdb file
-                    for filename in ['phpclass.sublime-classdb','*.sublime-project']:
-                      compPath = self.find_file(path, filename)
-                      if(compPath != None):
-                        location = os.path.dirname(compPath)
-                        break
-                    if location:
-                      return [location]
-                    else:
-                        sublime.status_message('Sublime project file not found. Are you sure it is saved in the root of your project?')
-            # nothing found
-            return window.folders()
