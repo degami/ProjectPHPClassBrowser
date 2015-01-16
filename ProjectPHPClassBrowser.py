@@ -689,9 +689,10 @@ class ProjectPHPClassBrowser(sublime_plugin.EventListener):
         path = view.file_name()
         completions_location = None
         if path:
+            utils = _projectPHPClassUtils( os.path.dirname(None) )
             # Try to find the phpclass.sublime-classdb file
             for filename in ['phpclass.sublime-classdb']:
-                completions_location = self.find_file(path, filename)
+                completions_location = utils.find_file(path, filename)
         if completions_location:
             data = []
             utils = _projectPHPClassUtils( os.path.dirname(completions_location) )
