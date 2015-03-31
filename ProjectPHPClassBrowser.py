@@ -250,7 +250,14 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
                                 if f.endswith(p):
                                     #parse the file and save class methods
                                     filepath = os.path.join(root, f)
-                                    pipe = subprocess.Popen([php_executable, parser, filepath], stdout=cfp, stderr=cfp)
+
+                                    pipe = None
+                                    if(sublime.platform() == 'windows'):
+                                      CREATE_NO_WINDOW = 0x08000000
+                                      pipe = subprocess.Popen([php_executable, parser, filepath], stdout=cfp, stderr=cfp, shell=False, creationflags=CREATE_NO_WINDOW)
+                                    else:
+                                      pipe = subprocess.Popen([php_executable, parser, filepath], stdout=cfp, stderr=cfp)
+
                                     out, err = pipe.communicate()
             # try to update browser window
             window = sublime.active_window()
