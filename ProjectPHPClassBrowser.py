@@ -232,6 +232,7 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
         return ['.inc','.php']
 
     def run(self):
+        print('ProjectPHPClassCompletionsScan run '+str(self.folders))
         try:
             utils = _projectPHPClassUtils(self.folders[0])
             compPath = utils.get_db_path()
@@ -374,6 +375,12 @@ class ProjectPhpclassCreateDatabaseCommand(sublime_plugin.WindowCommand):
                 folders.append(folder.get('path'))
         else:
             folders.append(window.folders()[0])
+
+        i = 0
+        while i < len(folders):
+            if (folders[i].startswith('/') != True):
+                folders[i] = os.path.dirname(window.project_file_name())+'/'+folders[i]
+            i = i + 1
 
         if(len(folders) > 0):
             threads = []
