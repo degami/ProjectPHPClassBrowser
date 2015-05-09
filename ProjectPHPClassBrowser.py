@@ -232,7 +232,6 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
         return ['.inc','.php']
 
     def run(self):
-        print('ProjectPHPClassCompletionsScan run '+str(self.folders))
         try:
             utils = _projectPHPClassUtils(self.folders[0])
             compPath = utils.get_db_path()
