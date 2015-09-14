@@ -167,8 +167,13 @@ class _projectPHPClassUtils:
             # ST3 - use project data
             project_data = window.project_data()
             out = []
+
             for folder in project_data.get('folders'):
+              if (folder.startswith('/') != True):
+                out.append( os.path.dirname(window.project_file_name())+'/'+ folder.get('path') )
+              else:
                 out.append(folder.get('path'))
+
             if (len(out) == 0):
                 return window.folders()
             return out
@@ -371,15 +376,12 @@ class ProjectPhpclassCreateDatabaseCommand(sublime_plugin.WindowCommand):
             # ST3 - use project data
             project_data = window.project_data()
             for folder in project_data.get('folders'):
+              if (folder.startswith('/') != True):
+                folders.append( os.path.dirname(window.project_file_name())+'/'+ folder.get('path') )
+              else:
                 folders.append(folder.get('path'))
         else:
             folders.append(window.folders()[0])
-
-        i = 0
-        while i < len(folders):
-            if (folders[i].startswith('/') != True):
-                folders[i] = os.path.dirname(window.project_file_name())+'/'+folders[i]
-            i = i + 1
 
         if(len(folders) > 0):
             threads = []
