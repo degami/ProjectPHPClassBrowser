@@ -668,6 +668,7 @@ class ProjectPHPClassBrowser(sublime_plugin.EventListener):
         window.run_command("click_phpclass_browser", {})
 
     def on_load(self, view):
+        sublime.status_message('Project PHP ClassBrowser starting.')
         window = sublime.active_window()
         utils = _projectPHPClassUtils(None)
         if( utils.is_browser_view(view) != True ):
