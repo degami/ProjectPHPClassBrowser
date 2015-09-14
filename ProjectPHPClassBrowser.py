@@ -376,7 +376,7 @@ class ProjectPhpclassCreateDatabaseCommand(sublime_plugin.WindowCommand):
             # ST3 - use project data
             project_data = window.project_data()
             for folder in project_data.get('folders'):
-              if (folder.startswith('/') != True):
+              if (folder.get('path').startswith('/') != True):
                 folders.append( os.path.dirname(window.project_file_name())+'/'+ folder.get('path') )
               else:
                 folders.append(folder.get('path'))
