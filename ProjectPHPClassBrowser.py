@@ -258,7 +258,7 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
                                     filepath = os.path.join(root, f)
 
                                     pipe = None
-                                    print php_executable + " " + parser + " " + filepath
+                                    print php_executable, " ", parser, " ", filepath
                                     if(sublime.platform() == 'windows'):
                                       CREATE_NO_WINDOW = 0x08000000
                                       pipe = subprocess.Popen([php_executable, parser, filepath], stdout=cfp, stderr=cfp, shell=False, creationflags=CREATE_NO_WINDOW)
