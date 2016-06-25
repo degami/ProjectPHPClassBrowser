@@ -169,7 +169,7 @@ class _projectPHPClassUtils:
             out = []
 
             for folder in project_data.get('folders'):
-              if (folder.startswith('/') != True):
+              if (os.path.isabs(folder.get('path')) != True):
                 out.append( os.path.dirname(window.project_file_name())+'/'+ folder.get('path') )
               else:
                 out.append(folder.get('path'))
