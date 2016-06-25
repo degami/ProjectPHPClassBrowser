@@ -170,7 +170,7 @@ class _projectPHPClassUtils:
 
             for folder in project_data.get('folders'):
               fpath = folder.get('path')
-              dipath = fpath.replace("\\", "\")
+              dipath = fpath.decode('string_escape')
               if (os.path.isabs(dipath) != True):
                 out.append(os.path.join(os.path.dirname(window.project_file_name()), dipath))
               else:
