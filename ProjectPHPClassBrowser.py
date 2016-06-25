@@ -169,8 +169,7 @@ class _projectPHPClassUtils:
             out = []
 
             for folder in project_data.get('folders'):
-              fpath = folder.get('path')
-              dipath = fpath.decode('string_escape')
+              dipath = folder.get('path')
               if (os.path.isabs(dipath) != True):
                 out.append(os.path.join(os.path.dirname(window.project_file_name()), dipath))
               else:
@@ -378,8 +377,7 @@ class ProjectPhpclassCreateDatabaseCommand(sublime_plugin.WindowCommand):
             # ST3 - use project data
             project_data = window.project_data()
             for folder in project_data.get('folders'):
-              fpath = folder.get('path')
-              dipath = fpath.decode('string_escape')
+              dipath = folder.get('path')
               if (os.path.isabs(dipath) != True):
                 folders.append(os.path.join(os.path.dirname(window.project_file_name()), dipath))
               else:
