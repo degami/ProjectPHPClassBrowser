@@ -1,4 +1,5 @@
 <?php
+file_put_contents("C:\Users\Alexander\debug_php.txt", json_encode($argv));
 
 array_shift($argv);
 foreach($argv as $filepath){
