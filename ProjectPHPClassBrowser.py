@@ -169,10 +169,12 @@ class _projectPHPClassUtils:
             out = []
 
             for folder in project_data.get('folders'):
-              if (os.path.isabs(folder.get('path')) != True):
-                out.append( os.path.dirname(window.project_file_name())+'/'+ folder.get('path') )
+			  fpath = folder.get('path')
+			  dipath = fpath.replace("\\", "\")
+              if (os.path.isabs(dipath) != True):
+                out.append(os.path.join(os.path.dirname(window.project_file_name()), dipath))
               else:
-                out.append(folder.get('path'))
+                out.append(dipath)
 
             if (len(out) == 0):
                 return window.folders()
