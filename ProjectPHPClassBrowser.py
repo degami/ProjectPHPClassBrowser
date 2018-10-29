@@ -169,10 +169,11 @@ class _projectPHPClassUtils:
             out = []
 
             for folder in project_data.get('folders'):
-              if (folder.startswith('/') != True):
-                out.append( os.path.dirname(window.project_file_name())+'/'+ folder.get('path') )
+              dipath = folder.get('path')
+              if (os.path.isabs(dipath) != True):
+                out.append(os.path.join(os.path.dirname(window.project_file_name()), dipath))
               else:
-                out.append(folder.get('path'))
+                out.append(dipath)
 
             if (len(out) == 0):
                 return window.folders()
@@ -257,6 +258,7 @@ class ProjectPHPClassCompletionsScan(threading.Thread):
                                     filepath = os.path.join(root, f)
 
                                     pipe = None
+                                    print(php_executable, " ", parser, " ", filepath)
                                     if(sublime.platform() == 'windows'):
                                       CREATE_NO_WINDOW = 0x08000000
                                       pipe = subprocess.Popen([php_executable, parser, filepath], stdout=cfp, stderr=cfp, shell=False, creationflags=CREATE_NO_WINDOW)
@@ -376,10 +378,12 @@ class ProjectPhpclassCreateDatabaseCommand(sublime_plugin.WindowCommand):
             # ST3 - use project data
             project_data = window.project_data()
             for folder in project_data.get('folders'):
-              if (folder.get('path').startswith('/') != True):
-                folders.append( os.path.dirname(window.project_file_name())+'/'+ folder.get('path') )
+              dipath = folder.get('path')
+              if (os.path.isabs(dipath) != True):
+                folders.append(os.path.join(os.path.dirname(window.project_file_name()), dipath))
               else:
-                folders.append(folder.get('path'))
+               folders.append(dipath)
+
         else:
             folders.append(window.folders()[0])
 
